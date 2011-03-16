@@ -9,7 +9,7 @@ import smsmonitor
 
 module = 'jirascheduler'
 logfilename = module+'.log'
-logging.basicConfig(filename=logfilename, level=logging.INFO)
+logging.basicConfig(filename=logfilename, level=logging.ERROR)
 logger = logging.getLogger(module)
 
 def main():
