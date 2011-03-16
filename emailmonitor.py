@@ -7,12 +7,10 @@ import mailhelpers
 import mongohelper
 import pymongo
 import sys
-import traceback
 import time
+import traceback
 
 module = 'emailmonitor'
-logfilename = module + '.log'
-logging.basicConfig(filename=logfilename, level=logging.ERROR)
 logger = logging.getLogger(module)
 config = None
 
@@ -22,13 +20,10 @@ fiftyminutes = datetime.timedelta(minutes=50)
 
 def initialize():
     logger.info('In initialize')
-    config = jirahelpers.get_config()
-    logger.info('Obtained config')
     mongohelper.initialize(config.mongohost, 
                            config.mongoport, 
                            config.mongo_max_retry)
     logger.info('Mongo initialized')
-    return config
 
 def classify_issues(issues):
     thirtyminuteoldissues = []
@@ -49,11 +44,12 @@ def classify_issues(issues):
     logger.info('Got %d 30 mt old unassigned issues' % (len(thirtyminuteoldissues)))
     return fiftyminuteoldissues, fortyminuteoldissues, thirtyminuteoldissues
 
-def main():
+def main(input_config):
     global config
     try:
-        logger.info('Started monitor')
-        config = initialize()
+        logger.info('Started %s monitor' % (module))
+        config = input_config
+        initialize()
         logger.info('Getting unassigned issues')
         issues = mongohelper.get_unassigned_issues(config.mongohost, 
                                                    config.mongoport, 
@@ -91,4 +87,7 @@ def main():
         raise
 
 if __name__ == '__main__':
-    main()
+    logfilename = module + '.log'
+    logging.basicConfig(filename=logfilename, level=logging.DEBUG)
+    config = jirahelpers.get_config()
+    main(config)

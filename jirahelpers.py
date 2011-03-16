@@ -29,7 +29,7 @@ class Config(object):
     def __init__(self):
         mongohost = 'localhost'
         mongoport = 27017
-
+        
 class Issue(object):
     """Simple class to hold basic information about JIRA issue"""
     def __init__(self, issue):
@@ -97,6 +97,7 @@ def get_config():
     
     config.admin_email = config_parser.get('Admin', 'admin_email')
     config.admin_sms = config_parser.get('Admin', 'admin_sms')
+    logger.info('Config read')
     return config
       
 def get_issues_by_filterid(auth, jiraproxy, filterid):

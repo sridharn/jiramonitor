@@ -9,7 +9,7 @@ logger = logging.getLogger(module)
 
 def send_mail(config, recipient_list, mimemsg):
     """Helper method to send an email of the issues where issues is a list of bson objects"""
-    logger.info('Send actual email')
+    logger.info('Send actual email/SMS')
     mailServer = SMTP(config.smtp_server, config.smtp_port)
     mailServer.ehlo()
     mailServer.starttls()
@@ -17,9 +17,8 @@ def send_mail(config, recipient_list, mimemsg):
     if config.smtp_login: mailServer.login(config.email_sender, config.email_password)
     mailServer.sendmail(config.email_sender, recipient_list, mimemsg.as_string(False))
     mailServer.close()
-    logger.info('Mail sent')
+    logger.info('Email/SMS sent')
     
-
 def email_issues(config, recipient_list, subject, issues):
     """Helper method to send an email of the issues where issues is a list of bson objects"""
     logger.info('Send email of issues')
@@ -37,7 +36,6 @@ def email_issues(config, recipient_list, subject, issues):
     mime_msg.attach(MIMEText(mailBody,'html'))
     
     send_mail(config, recipient_list, mime_msg)
-
     
 def sms_issue(config, issue):
     """Helper method to send an sms of the issue defined by the bson dictionary issue"""

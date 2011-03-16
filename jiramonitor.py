@@ -1,18 +1,16 @@
 #!/usr/bin/python
   
-import logging
 import jirahelpers
+import logging
 import mailhelpers
 import mongohelper
 import pymongo
 import sys
-import traceback
 import time
+import traceback
 import xmlrpclib
 
 module = 'jiramonitor'
-logfilename = module+'.log'
-logging.basicConfig(filename=logfilename, level=logging.ERROR)
 logger = logging.getLogger(module)
 config = None
      
@@ -48,8 +46,6 @@ def update_issues(auth, proxy):
 def initialize():
     global sender, admin_email, admin_sms, smtp_password
     logger.info('In initialize')
-    config = jirahelpers.get_config()
-    logger.info('Obtained config')
     mongohelper.initialize_and_seed(config.mongohost, 
                                     config.mongoport, 
                                     config.mongo_max_retry)
@@ -59,13 +55,14 @@ def initialize():
                                                 config.jirapassword, 
                                                 config.jira_max_errors)
     logger.info('Authenticated against JIRA')
-    return config, proxy, auth
+    return proxy, auth
 
-def main():
+def main(input_config):
     global config
     try:
-        logger.info('Started JIRA monitor')
-        config, proxy, auth = initialize()
+        logger.info('Started %s monitor' % (module))
+        config = input_config
+        proxy, auth = initialize()
         process_filter(config.filter_id, auth, proxy)
         logger.info('Filter processed')
         update_issues(auth, proxy)
@@ -79,4 +76,7 @@ def main():
         raise
     
 if __name__ == '__main__':
-    main()
+    logfilename = module+'.log'
+    logging.basicConfig(filename=logfilename, level=logging.DEBUG)
+    config = jirahelpers.get_config()
+    main(config)
