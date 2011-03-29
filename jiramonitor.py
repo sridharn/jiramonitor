@@ -46,9 +46,7 @@ def update_issues(auth, proxy):
 def initialize():
     global sender, admin_email, admin_sms, smtp_password
     logger.info('In initialize')
-    mongohelper.initialize_and_seed(config.mongohost, 
-                                    config.mongoport, 
-                                    config.mongo_max_retry)
+    mongohelper.initialize_and_seed(config)
     logger.info('Mongo initialized')
     proxy, auth = jirahelpers.auth_against_jira(config.jirauri, 
                                                 config.jirauser, 

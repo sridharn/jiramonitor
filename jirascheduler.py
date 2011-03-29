@@ -8,8 +8,6 @@ import logging
 import smsmonitor
 
 module = 'jirascheduler'
-logfilename = module+'.log'
-logging.basicConfig(filename=logfilename, level=logging.ERROR)
 logger = logging.getLogger(module)
 
 def main():
@@ -28,6 +26,8 @@ def main():
         logger.info('Completed email notifications')
     
 if __name__ == '__main__':
+    logfilename = module+'.log'
+    logging.basicConfig(filename=logfilename, level=logging.ERROR)
     main()
     
     

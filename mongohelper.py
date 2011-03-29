@@ -8,6 +8,7 @@ smscollection = None
 issuescollection = None
 logcollection = None
 usercollection = None
+unassignedstatus = 1
 
 module = 'mongohelper'
 logger = logging.getLogger(module)
@@ -27,9 +28,9 @@ class CannotConnectToMongo(Exception):
     def __str__(self):
         return self.msg
     
-def initialize_and_seed(host, port, maxretrycount):
+def initialize_and_seed(config):
     global usercollection
-    initialize(host, port, maxretrycount)
+    initialize(config)
     usercollection = database.userlist
     with open('userlist.txt', 'r') as f:
         for line in f:
@@ -37,15 +38,16 @@ def initialize_and_seed(host, port, maxretrycount):
             logger.debug('User name=%s User id=%s' % (user[0].strip(), user[1].strip()))
             usercollection.save({'_id':user[0].strip(),'email':user[1].strip()})            
 
-def initialize(host, port, maxretrycount):
+def initialize(config):
     """Some mongodb initialization like establish connection, ensure the collection with its index etc"""
     global connection, database, smscollection, issuescollection
+    host, port, maxretrycount, database = config.mongohost, config.mongoport, config.mongo_max_retry, config.mongo_database 
     retry_count = 1
     logger.info('Initializing mongo with %s %d %d' % (host, port, maxretrycount))
     while retry_count < maxretrycount:
         try:
             connection = pymongo.Connection(host,port)
-            database = connection.jira
+            database = connection[database]
             smscollection = database.smslist
             issuescollection = database.jiralist
             logcollection = database.log
@@ -61,21 +63,21 @@ def initialize(host, port, maxretrycount):
 def get_new_issue(mongohost, mongoport, maxretrycount):
     logger.info('In get new issue')
     if not connection:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport, maxretrycount)
     issue = smscollection.find_and_modify(query={"sms_sent":False},update={"$unset":{"sms_sent":1}, "$set":{"sms_notified":datetime.now()}})
     return issue
     
 def store_issues_to_mongo(mongohost, mongoport, maxretrycount, issues):
     if connection == None:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport)
     insert_issues_to_smscollection(mongohost, mongoport, maxretrycount, issues)
     insert_issues_to_issuescollection(mongohost, mongoport, maxretrycount, issues)
 
 def insert_issues_to_smscollection(mongohost, mongoport, maxretrycount, issues):
     if connection == None:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport, maxretrycount)
     for issue in issues:
         issue_doc = ({"_id":issue.key,
@@ -97,7 +99,7 @@ def insert_issues_to_issuescollection(mongohost, mongoport, maxretrycount, issue
     6 - Closed
     """
     if connection == None:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport, maxretrycount)
     for issue in issues:
         issue_doc = ({"_id":issue.key,
@@ -113,9 +115,8 @@ def insert_issues_to_issuescollection(mongohost, mongoport, maxretrycount, issue
 def get_unassigned_issues(mongohost, mongoport, maxretrycount):
     """get list of unassigned jira issues. status=1."""
     
-    unassignedstatus = 1
     if connection == None:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport, maxretrycount)
     issues = []
     for issue in issuescollection.find({'status':unassignedstatus}):
@@ -123,9 +124,35 @@ def get_unassigned_issues(mongohost, mongoport, maxretrycount):
         logger.debug('added issue '+issue.__str__())
     return issues
 
+def get_issues_to_escalate(mongohost, mongoport, maxretrycount, timedelta):
+    """get list of unassigned jira issues that have a creation time timedelta before."""
+    
+    if connection == None:
+        logger.debug("not initialized")
+        initialize(mongohost, mongoport, maxretrycount)
+    issues = []
+    currenttime = datetime.utcnow()
+    escalatetime = currenttime - timedelta
+    for issue in issuescollection.find({'status':unassignedstatus, 
+                                        'jiraCreationTime' : {'$lt':escalatetime}, 
+                                        'escalated' : {'$exists' : False}}):
+        issues.append(issue)
+        logger.debug('added issue '+issue.__str__())
+    return issues
+
+def mark_issues_as_escalated(mongohost, 
+                             mongoport, 
+                             mongo_max_retry,
+                             issues):
+    if connection == None:
+        logger.debug("not initialized")
+        initialize(mongohost, mongoport, maxretrycount)
+    issuescollection.update({'_id' : {'$in' : [issue['_id'] for issue in issues]}}, 
+                            {'$set' : {'escalated' : True}})
+
 def get_commenters(mongohost, mongoport, mongo_max_retry):
     if connection == None:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport, maxretrycount)
     commenters = []
     for commenter in usercollection.find({},{'_id':1}):
@@ -134,7 +161,7 @@ def get_commenters(mongohost, mongoport, mongo_max_retry):
 
 def set_inprogress(mongohost, mongoport, mongo_max_retry, issueid):
     if connection == None:
-        print "not initialized"
+        logger.debug("not initialized")
         initialize(mongohost, mongoport, maxretrycount)
     issuescollection.find_and_modify(query={"_id":issueid},update={"$set":{"status":3}})
 

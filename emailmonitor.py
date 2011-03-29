@@ -5,10 +5,12 @@ import jirahelpers
 import logging
 import mailhelpers
 import mongohelper
+import os
 import pymongo
 import sys
 import time
 import traceback
+import twiliohelper
 
 module = 'emailmonitor'
 logger = logging.getLogger(module)
@@ -20,9 +22,7 @@ fiftyminutes = datetime.timedelta(minutes=50)
 
 def initialize():
     logger.info('In initialize')
-    mongohelper.initialize(config.mongohost, 
-                           config.mongoport, 
-                           config.mongo_max_retry)
+    mongohelper.initialize(config)
     logger.info('Mongo initialized')
 
 def classify_issues(issues):
@@ -58,11 +58,19 @@ def main(input_config):
         if len(issues) > 0:
             fiftyminuteoldissues, fortyminuteoldissues, thirtyminuteoldissues = classify_issues(issues)
             if len(fiftyminuteoldissues) > 0:
-                logger.info('Emailing 50 minute old issues')
-                mailhelpers.email_issues(config, 
-                                         config.phone_escl_id, 
-                                         'List of issues that are open for atleast 50', 
-                                         fiftyminuteoldissues)
+                logger.info('Escalating 50 minute old issues')
+                if os.environ.get('USETWILIOPHONE'):
+                    logger.debug('Escalate to phone')
+                    twiliohelper.escalate(config, 
+                                          config.twilio_phone_escl, 
+                                          'List of issues that are open for atleast 50 minutes', 
+                                          fiftyminuteoldissues)
+                else:
+                    logger.debug('Escalate to email')
+                    mailhelpers.email_issues(config, 
+                                             config.phone_escl_id, 
+                                             'List of issues that are open for atleast 50 minutes', 
+                                             fiftyminuteoldissues)
                 logger.info('Done emailing 50 minutes issues')
             if len(fortyminuteoldissues) > 0:
                 logger.info('Emailing 40 minute old issues')

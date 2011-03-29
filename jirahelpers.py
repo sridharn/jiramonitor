@@ -87,6 +87,7 @@ def get_config():
     config.mongohost  = config_parser.get('Mongo', 'host')
     config.mongoport  = config_parser.getint('Mongo', 'port')
     config.mongo_max_retry = config_parser.getint('Mongo', 'max_retry')
+    config.mongo_database = config_parser.get('Mongo', 'database')
     
     config.jira_sleep_time  = config_parser.getint('Monitors', 'jira_sleep')
     config.jira_max_errors  = config_parser.getint('Monitors', 'jira_max_errors')
@@ -97,6 +98,17 @@ def get_config():
     
     config.admin_email = config_parser.get('Admin', 'admin_email')
     config.admin_sms = config_parser.get('Admin', 'admin_sms')
+    
+    config.twilio_account_sid = config_parser.get('Twilio', 'account_sid')
+    config.twilio_account_token = config_parser.get('Twilio', 'account_token')
+    config.twilio_caller_id = config_parser.get('Twilio', 'caller_id')
+    config.twilio_sms_notifs = config_parser.get('Twilio', 'sms_notifs')
+    config.twilio_callback_url = config_parser.get('Twilio', 'callback_url')
+    config.twilio_phone_escl = config_parser.get('Twilio', 'phone_escl')
+    
+    config.webserver_host = config_parser.get('Webserver', 'host')
+    config.webserver_port = config_parser.getint('Webserver', 'port')
+    
     logger.info('Config read')
     return config
       

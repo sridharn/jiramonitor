@@ -19,6 +19,10 @@ def send_mail(config, recipient_list, mimemsg):
     mailServer.close()
     logger.info('Email/SMS sent')
     
+def escalate(config, recipient_list, subject, issues):
+    email_issues(config, recipient_list, subject, issues)
+
+
 def email_issues(config, recipient_list, subject, issues):
     """Helper method to send an email of the issues where issues is a list of bson objects"""
     logger.info('Send email of issues')
@@ -37,16 +41,19 @@ def email_issues(config, recipient_list, subject, issues):
     
     send_mail(config, recipient_list, mime_msg)
     
-def sms_issue(config, issue):
+def sms_issue(config, issue, recipient_list):
     """Helper method to send an sms of the issue defined by the bson dictionary issue"""
     logger.info('Send sms of %s' % (issue["_id"]))
     sms_msg = MIMEMultipart()
     sms_msg['Subject'] = 'New JIRA issue %s' % (issue["_id"])
     sms_msg['From'] = config.email_sender
-    sms_msg['To'] = config.sms_id
+    if isinstance(recipient_list, str):
+        sms_msg['To'] = recipient_list
+    else:
+        sms_msg['To'] = ','.join(recipient_list)
     sms_msg.attach(MIMEText(get_sms_body(issue)))
     
-    send_mail(config, config.sms_id, sms_msg)
+    send_mail(config, recipient_list, sms_msg)
 
 def get_sms_body(issue):
     """Helper method to create an sms body of the issue bson"""
