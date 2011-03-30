@@ -75,7 +75,7 @@ if __name__ == '__main__':
              }
     try:
         #sms_issue(config, issue)
-        escalate()
+        escalate(config, '6504835343', '', 'test')
     except Exception, e:
         print e;
         print e.read()
