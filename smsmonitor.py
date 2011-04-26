@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import confighelper
 import jirahelpers
 import logging
 import mailhelpers
@@ -14,6 +15,7 @@ import traceback
 module = 'smsmonitor'
 logger = logging.getLogger(module)
 config = None
+sms_numbers = []
 
 def initialize():
     global sender, admin_email, admin_sms, smtp_password
@@ -24,23 +26,29 @@ def initialize():
 def sms_issue(config, issue):
     if os.environ.get('USETWILIOSMS'):
         logger.debug('Using twilio')
-        twiliohelper.sms_issue(config, issue, config.twilio_sms_notifs)
+        twiliohelper.sms_issue(config, issue, get_sms_phones())
     else:
         logger.debug('Using mail')
-        mailhelpers.sms_issue(config, issue, config.sms_id)
+        mailhelpers.sms_issue(config, issue, get_sms_emails())
+
+def get_sms_emails():
+    return config.sms_id
+
+def get_sms_phones():
+    return config.twilio_sms_notifs
     
 def main(input_config):
-    global config
+    global config, sms_numbers
     try:
         logger.info('Started %s monitor' % (module))
         config = input_config
         initialize()
         error_count = 0
+        sms_numbers= mongohelper.get_oncall_sms_nos(config)
+        logger.debug(sms_numbers)
         while error_count <= config.email_max_errors:
             try:
-                issue = mongohelper.get_new_issue(config.mongohost, 
-                                                  config.mongoport,
-                                                  config.mongo_max_retry)
+                issue = mongohelper.get_new_issue(config)
                 if issue != None:
                     logger.debug('Got issue %s' % (issue.__str__()))
                     sms_issue(config, issue)
@@ -57,6 +65,7 @@ def main(input_config):
             except:
                 logger.error(traceback.format_exc())
                 error_count += 1
+        
     except:
         error = traceback.format_exc()
         logger.critical(error)
@@ -68,5 +77,5 @@ def main(input_config):
 if __name__ == '__main__':
     logfilename = module+'.log'
     logging.basicConfig(filename=logfilename, level=logging.DEBUG)
-    config = jirahelpers.get_config()
+    config = confighelper.get_config()
     main(config)

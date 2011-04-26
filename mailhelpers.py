@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import jirahelpers
 import logging
 from email.MIMEMultipart import MIMEMultipart
@@ -21,7 +23,6 @@ def send_mail(config, recipient_list, mimemsg):
     
 def escalate(config, recipient_list, subject, issues):
     email_issues(config, recipient_list, subject, issues)
-
 
 def email_issues(config, recipient_list, subject, issues):
     """Helper method to send an email of the issues where issues is a list of bson objects"""
@@ -74,7 +75,7 @@ def formatHtmlMailBody(issues):
     """Helper method to create an email body of the issues bson"""
     logger.info('In format email body')
     msg = ['<html><head></head><body><table border="1">']
-    msg.append('<tr><th>Id</ht><th>Priority</th><th>Company</th><th>Reporter</th><th>Created</th><th>Description</th></tr>')
+    msg.append('<tr><th>Id</ht><th>Priority</th><th>Company</th><th>Reporter</th><th>Assignee</th><th>Created</th><th>Description</th></tr>')
     for issue in issues:
         msg.append('<tr>')
         msg.append('<td><a href="')
@@ -94,6 +95,9 @@ def formatHtmlMailBody(issues):
         msg.append('</td>')
         msg.append('<td>')
         msg.append(issue['reporter'])
+        msg.append('</td>')
+        msg.append('<td>')
+        msg.append(issue.get('assignee', 'Unassigned'))
         msg.append('</td>')
         msg.append('<td>')
         msg.append(issue["jiraCreationTime"].strftime('%Y/%m/%d %H:%M:%S'))

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from bottle import route, run
+import confighelper
 import datetime
 import jirahelpers
 import logging
@@ -36,13 +37,11 @@ def index():
 def do():
     try:
         logger.info('In do')
-        config = jirahelpers.get_config()
+        config = confighelper.get_config()
         logger.info('Obtained config')
         response = ["<?xml version='1.0' encoding='utf-8' ?>\n"]
         r = twilio.Response()
-        issues = mongohelper.get_issues_to_escalate(config.mongohost, 
-                                                    config.mongoport, 
-                                                    config.mongo_max_retry, 
+        issues = mongohelper.get_issues_to_escalate(config, 
                                                     timedelta)
         if len(issues) > 0:
             say_msg = ['The following issues have been opened for at least 50 minutes']
@@ -50,9 +49,7 @@ def do():
                 say_msg.append(', ')
                 say_msg.append(issue['_id'])
             s = twilio.Say(''.join(say_msg))
-            mongohelper.mark_issues_as_escalated(config.mongohost, 
-                                                config.mongoport, 
-                                                config.mongo_max_retry,
+            mongohelper.mark_issues_as_escalated(config,
                                                 issues)
         else:
             s = twilio.Say('All escalations have been taken care of')
@@ -63,6 +60,6 @@ def do():
         logger.warning(e)
 
 if __name__ == "__main__":
-    config = jirahelpers.get_config()
+    config = confighelper.get_config()
     run(host=config.webserver_host, port=config.webserver_port)
     

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import confighelper
 import datetime
 import jirahelpers
 import logging
@@ -64,7 +65,7 @@ def escalate(config, recipient_list, subject, issues):
 if __name__ == '__main__':
     logfilename = module+'.log'
     logging.basicConfig(filename=logfilename, level=logging.DEBUG)
-    config = jirahelpers.get_config()
+    config = confighelper.get_config()
     logger.debug(config.__dict__)
     issue = {
              '_id' : 'ID1',

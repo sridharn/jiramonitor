@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import confighelper
 import datetime
 import emailmonitor
 import jirahelpers
@@ -14,7 +15,7 @@ def main():
     logger.info('%s started' % (module))
     now = datetime.datetime.now().minute
     logger.info('Now %d' % (now))
-    config = jirahelpers.get_config()
+    config = confighelper.get_config()
     logger.info('Obtained config')
     logger.debug(config.__dict__)
     jiramonitor.main(config)

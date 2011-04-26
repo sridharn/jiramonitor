@@ -1,5 +1,6 @@
 #!/usr/bin/python
-  
+
+import confighelper  
 import jirahelpers
 import logging
 import mailhelpers
@@ -20,33 +21,30 @@ def process_filter(filter_id, auth, proxy):
     if no_of_issues < 1:
         return
     logger.info('Number of issues obtained from JIRA %d' % (no_of_issues))
-    mongohelper.store_issues_to_mongo(config.mongohost, 
-                                      config.mongoport, 
-                                      config.mongo_max_retry,
+    mongohelper.store_issues_to_mongo(config,
                                       issues)
 
 def update_issues(auth, proxy):
-    issues = mongohelper.get_unassigned_issues(config.mongohost, 
-                                               config.mongoport, 
-                                               config.mongo_max_retry)
-    valid_commenters = mongohelper.get_commenters(config.mongohost, 
-                                                  config.mongoport, 
-                                                  config.mongo_max_retry)
+    issues = mongohelper.get_unassigned_issues(config)
+    valid_commenters = mongohelper.get_10gen_commenters(config)
     for issue in issues:
         issueid = issue['_id']
-        commenters = jirahelpers.get_issue_commenters(auth, proxy, issueid)
-        valid_comments = valid_commenters & commenters
-        if len(valid_comments) > 0:
-            mongohelper.set_inprogress(config.mongohost, 
-                                       config.mongoport, 
-                                       config.mongo_max_retry,
-                                       issueid)
-    
+        try:
+            commenters = jirahelpers.get_issue_commenters(auth, proxy, issueid)
+            valid_comments = valid_commenters & commenters
+            if len(valid_comments) > 0:
+                mongohelper.set_inprogress(config,
+                                           issueid)
+        except:
+            # most probably due to ticket rename
+            logger.debug('Error fetching commenters for Issue %s' % (issueid))
+            mongohelper.remove_ticket(config,
+                                      issueid)
     
 def initialize():
     global sender, admin_email, admin_sms, smtp_password
     logger.info('In initialize')
-    mongohelper.initialize_and_seed(config)
+    mongohelper.initialize(config)
     logger.info('Mongo initialized')
     proxy, auth = jirahelpers.auth_against_jira(config.jirauri, 
                                                 config.jirauser, 
@@ -76,5 +74,5 @@ def main(input_config):
 if __name__ == '__main__':
     logfilename = module+'.log'
     logging.basicConfig(filename=logfilename, level=logging.DEBUG)
-    config = jirahelpers.get_config()
+    config = confighelper.get_config()
     main(config)
