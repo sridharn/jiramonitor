@@ -27,11 +27,6 @@ def index():
     r = twilio.Response()
     s = twilio.Say('Hello, Thank you for calling 10 jen. 10 jen develops and provides enterprise grade support for Mongo D B.')
     r.append(s)
-    s = twilio.Say(' And oh yes', voice = twilio.Say.WOMAN)
-    r.append(s)
-    r.append(twilio.Pause())
-    s = twilio.Say(' Mongo D B is web scale', voice = twilio.Say.WOMAN)
-    r.append(s)
     return r.__repr__()
     
 def do():
